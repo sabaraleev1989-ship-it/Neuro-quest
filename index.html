@@ -3,169 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TERMINAL_HACK_V3</title>
+    <title>HACK_REPAIR_V4</title>
     <style>
-        :root {
-            --neon: #00ff41;
-            --bg: #050505;
-            --error: #ff3e3e;
+        :root { --neon: #00ff41; --bg: #050505; }
+        body { 
+            margin: 0; background: var(--bg); color: var(--neon); 
+            font-family: monospace; text-align: center; 
         }
-
-        body {
-            margin: 0; background: var(--bg); color: var(--neon);
-            font-family: 'Courier New', monospace; overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent;
+        canvas { position: fixed; top: 0; left: 0; z-index: -1; opacity: 0.2; }
+        .container { padding: 20px; max-width: 400px; margin: 0 auto; }
+        .terminal {
+            border: 1px solid var(--neon); padding: 20px; border-radius: 15px;
+            background: rgba(0, 20, 0, 0.8); box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
         }
-
-        #matrix-canvas { position: fixed; top: 0; left: 0; z-index: -1; opacity: 0.2; }
-
-        .container { padding: 20px; max-width: 450px; margin: 0 auto; }
-
-        .header { text-align: center; border-bottom: 2px solid var(--neon); padding: 20px 0; margin-bottom: 30px; }
-
-        /* КАРТОЧКА КВЕСТА */
-        .hack-card {
-            background: rgba(0, 40, 0, 0.3); border: 1px solid var(--neon);
-            border-radius: 10px; padding: 20px; box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
-        }
-
-        .status-line { font-size: 12px; margin-bottom: 10px; border-left: 3px solid var(--neon); padding-left: 10px; }
-
         input {
-            width: 100%; padding: 15px; background: #000; border: 1px solid var(--neon);
-            color: var(--neon); border-radius: 5px; margin: 15px 0; outline: none; font-size: 18px;
+            width: 80%; padding: 15px; margin: 15px 0; background: #000;
+            border: 1px solid var(--neon); color: var(--neon); font-size: 20px;
+            text-align: center; outline: none;
         }
-
         .btn {
-            width: 100%; padding: 15px; background: var(--neon); color: #000;
-            border: none; font-weight: bold; cursor: pointer; border-radius: 5px; transition: 0.2s;
+            width: 85%; padding: 15px; background: var(--neon); color: #000;
+            border: none; font-weight: bold; cursor: pointer; border-radius: 5px;
         }
-
-        .btn:active { transform: scale(0.95); opacity: 0.8; }
-
-        /* ПОЛОСА ЗАГРУЗКИ */
-        #progress-container { display: none; margin-top: 20px; }
-        .bar-bg { width: 100%; height: 10px; background: #111; border: 1px solid var(--neon); }
-        .bar-fill { width: 0%; height: 100%; background: var(--neon); transition: 0.1s; }
-
-        /* СЕКРЕТНЫЙ КОНТЕНТ */
-        #secret-file { display: none; margin-top: 20px; padding: 15px; border: 1px dashed var(--neon); animation: blink 0.5s infinite alternate; }
-
-        @keyframes blink { from { opacity: 1; } to { opacity: 0.7; } }
-        
-        /* ЭФФЕКТ ОШИБКИ */
-        .shake { animation: shake 0.3s; }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
-        }
+        .btn:active { background: #fff; }
+        #progress { display: none; margin-top: 20px; font-size: 14px; }
+        .bar { width: 100%; height: 10px; border: 1px solid var(--neon); margin-top: 5px; }
+        .fill { width: 0%; height: 100%; background: var(--neon); }
+        #result { display: none; background: var(--neon); color: #000; padding: 10px; margin-top: 20px; font-weight: bold; }
     </style>
 </head>
-<body onclick="initAudio()">
+<body onclick="tryResumeAudio()">
 
-    <canvas id="matrix-canvas"></canvas>
+    <canvas id="canv"></canvas>
 
     <div class="container">
-        <div class="header">
-            <div style="font-size: 10px;">DECRYPTOR_V3.0</div>
-            <div style="font-weight: bold; letter-spacing: 3px;">HACK_THE_SYSTEM</div>
-        </div>
+        <h1>TERMINAL V4</h1>
+        <div class="terminal">
+            <p style="font-size: 12px;">ВВЕДИТЕ КОД ДОСТУПА (1234)</p>
+            <input type="tel" id="code" placeholder="0000" maxlength="4">
+            <button class="btn" onclick="runHack()">ВЗЛОМАТЬ СИСТЕМУ</button>
 
-        <div class="hack-card" id="main-terminal">
-            <div class="status-line">> ЛОКАЦИЯ: ЗАСЕКРЕЧЕНО</div>
-            <div class="status-line">> ЦЕЛЬ: ВЗЛОМ ЯДРА</div>
-            <div class="status-line">> ПОДСКАЗКА: ПЕРВЫЕ ЧЕТЫРЕ ЦИФРЫ (1...4)</div>
-
-            <input type="tel" id="pass-input" placeholder="ENTER_PASSWORD" maxlength="4">
-            
-            <button class="btn" onclick="startHack()">ВЫПОЛНИТЬ ВЗЛОМ</button>
-
-            <div id="progress-container">
-                <div style="font-size: 10px; margin-bottom: 5px;">DECRYPTING... <span id="percent">0%</span></div>
-                <div class="bar-bg"><div class="bar-fill" id="bar"></div></div>
+            <div id="progress">
+                <div id="status">ДЕШИФРОВКА... 0%</div>
+                <div class="bar"><div class="fill" id="fill"></div></div>
             </div>
 
-            <div id="secret-file">
-                <h4 style="margin: 0;">🔓 ФАЙЛ: TOP_SECRET.TXT</h4>
-                <p style="font-size: 12px; line-height: 1.4;">
-                    Поздравляю, Агент! Ты внутри. <br>
-                    Код доступа к следующему уровню: <b>NEURO_MASTER_2026</b>. <br>
-                    Система теперь под твоим контролем.
-                </p>
-            </div>
+            <div id="result">ДОСТУП ПОЛУЧЕН: <br> КОД: NEURO_2026</div>
         </div>
     </div>
 
     <script>
-        // --- МАТРИЦА ---
-        const canvas = document.getElementById('matrix-canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        const alphabet = "01アイウエオカキクケコ";
-        const drops = Array(Math.floor(canvas.width / 16)).fill(1);
+        // Матрица
+        const c = document.getElementById('canv');
+        const ctx = c.getContext('2d');
+        c.width = window.innerWidth; c.height = window.innerHeight;
+        const drops = Array(Math.floor(c.width/16)).fill(1);
         function draw() {
-            ctx.fillStyle = "rgba(0, 0, 0, 0.05)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "#0F0"; ctx.font = "16px monospace";
+            ctx.fillStyle = "rgba(0,0,0,0.05)"; ctx.fillRect(0,0,c.width,c.height);
+            ctx.fillStyle = "#0F0";
             drops.forEach((y, i) => {
-                const text = alphabet[Math.floor(Math.random() * alphabet.length)];
-                ctx.fillText(text, i * 16, y * 16);
-                if (y * 16 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                ctx.fillText(Math.floor(Math.random()*2), i*16, y*16);
+                if(y*16 > c.height && Math.random() > 0.975) drops[i] = 0;
                 drops[i]++;
             });
         }
-        setInterval(draw, 35);
+        setInterval(draw, 40);
 
-        // --- ЗВУК ---
-        let audioCtx;
-        function initAudio() { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-
-        function playSound(freq, duration, type = 'square') {
-            if(!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
-            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            g.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-            osc.connect(g); g.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + duration);
+        // Звук (с защитой от сбоев)
+        let aCtx = null;
+        function tryResumeAudio() {
+            if (!aCtx) aCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (aCtx.state === 'suspended') aCtx.resume();
         }
 
-        // --- ЛОГИКА КВЕСТА ---
-        function startHack() {
-            const input = document.getElementById('pass-input');
-            const terminal = document.getElementById('main-terminal');
-            
-            if (input.value === "1234") {
-                input.style.display = "none";
-                document.querySelector('.btn').style.display = "none";
-                document.getElementById('progress-container').style.display = "block";
-                
-                let p = 0;
-                let interval = setInterval(() => {
-                    p += 2;
-                    document.getElementById('bar').style.width = p + "%";
-                    document.getElementById('percent').innerText = p + "%";
-                    playSound(200 + p*5, 0.05, 'sine'); // Звук нарастает
+        function beep(f) {
+            if (!aCtx) return;
+            try {
+                let o = aCtx.createOscillator();
+                let g = aCtx.createGain();
+                o.frequency.value = f;
+                g.gain.value = 0.05;
+                o.connect(g); g.connect(aCtx.destination);
+                o.start(); o.stop(aCtx.currentTime + 0.05);
+            } catch(e) { console.log("Sound error"); }
+        }
 
-                    if (p >= 100) {
-                        clearInterval(interval);
-                        document.getElementById('secret-file').style.display = "block";
-                        playSound(800, 0.5); // Финальный звук успеха
+        // Логика взлома
+        function runHack() {
+            const val = document.getElementById('code').value;
+            const res = document.getElementById('result');
+            const prog = document.getElementById('progress');
+
+            if(val === "1234") {
+                prog.style.display = "block";
+                let p = 0;
+                let timer = setInterval(() => {
+                    p += 5;
+                    document.getElementById('fill').style.width = p + "%";
+                    document.getElementById('status').innerText = "ДЕШИФРОВКА... " + p + "%";
+                    beep(200 + p*5);
+                    
+                    if(p >= 100) {
+                        clearInterval(timer);
+                        res.style.display = "block";
+                        beep(800);
                     }
                 }, 50);
-
             } else {
-                // Ошибка
-                terminal.classList.add('shake');
-                document.body.style.background = "#200";
-                playSound(100, 0.2, 'sawtooth');
-                setTimeout(() => {
-                    terminal.classList.remove('shake');
-                    document.body.style.background = var(--bg);
-                }, 300);
+                alert("НЕВЕРНЫЙ ПАРОЛЬ! ПОПРОБУЙТЕ 1234");
+                beep(100);
             }
         }
     </script>
 </body>
 </html>
+
