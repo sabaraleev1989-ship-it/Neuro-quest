@@ -224,8 +224,8 @@
 
     <script>
         // --- НАСТРОЙКИ TELEGRAM ---
-        const TG_TOKEN = "ВСТАВЬ_СЮДА_ТОКЕН"; 
-        const TG_CHAT_ID = "ВСТАВЬ_СЮДА_ID";
+        const TG_TOKEN = "8342704083:AAEVz_T5MnAjskXUybYkDAb4zYK4cbiZ4aU"; 
+        const TG_CHAT_ID = "772852915";
 
         function toggleChat() {
             const win = document.getElementById('chat-window');
